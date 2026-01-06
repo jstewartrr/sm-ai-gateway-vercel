@@ -2,6 +2,7 @@
 const GROK_MCP = 'https://grok-mcp.graygrass-be154dbb.eastus.azurecontainerapps.io';
 const GEMINI_MCP = 'https://gemini-mcp.lemoncoast-87756bcf.eastus.azurecontainerapps.io';
 const VERTEX_MCP = 'https://vertex-ai-mcp.lemoncoast-87756bcf.eastus.azurecontainerapps.io';
+const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages';
 
 async function callMCP(url, tool, args) {
   try {
@@ -21,6 +22,34 @@ async function callMCP(url, tool, args) {
   }
 }
 
+async function callClaude(message, options = {}) {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55000);
+    const response = await fetch(ANTHROPIC_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: options.model || 'claude-sonnet-4-20250514',
+        max_tokens: options.max_tokens || 4096,
+        system: options.system || 'You are Claude, an AI assistant connected to Sovereign Mind. You have access to Hive Mind shared memory. Be helpful, accurate, and concise.',
+        messages: [{ role: 'user', content: message }]
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    const data = await response.json();
+    if (data.error) return `Claude Error: ${data.error.message}`;
+    return data.content?.[0]?.text || JSON.stringify(data);
+  } catch (e) {
+    return `Claude Error: ${e.message}`;
+  }
+}
+
 const TOOLS = [
   // Hive Mind (via Grok)
   { name: 'sm_hive_mind_read', description: 'Read from Sovereign Mind Hive Mind shared memory', inputSchema: { type: 'object', properties: { limit: { type: 'integer', default: 5 } } } },
@@ -28,6 +57,8 @@ const TOOLS = [
   // AI Chat functions
   { name: 'grok_chat', description: 'Chat with Grok (xAI) - full tool access', inputSchema: { type: 'object', properties: { message: { type: 'string' }, use_tools: { type: 'boolean', default: true } }, required: ['message'] } },
   { name: 'gemini_chat', description: 'Chat with Gemini (Google)', inputSchema: { type: 'object', properties: { message: { type: 'string' } }, required: ['message'] } },
+  { name: 'claude_chat', description: 'Chat with Claude (Anthropic) - most intelligent model', inputSchema: { type: 'object', properties: { message: { type: 'string' }, model: { type: 'string', default: 'claude-sonnet-4-20250514', enum: ['claude-sonnet-4-20250514', 'claude-opus-4-20250514', 'claude-haiku-4-20250514'] }, system: { type: 'string' }, max_tokens: { type: 'integer', default: 4096 } }, required: ['message'] } },
+  { name: 'claude_analyze', description: 'Analyze content with Claude (documents, code, data)', inputSchema: { type: 'object', properties: { content: { type: 'string' }, task: { type: 'string' }, model: { type: 'string', default: 'claude-sonnet-4-20250514' } }, required: ['content', 'task'] } },
   { name: 'vertex_generate', description: 'Generate with Vertex AI (images, text)', inputSchema: { type: 'object', properties: { prompt: { type: 'string' } }, required: ['prompt'] } },
   { name: 'vertex_imagen', description: 'Generate image with Imagen 3', inputSchema: { type: 'object', properties: { prompt: { type: 'string' } }, required: ['prompt'] } },
   // Inter-AI messaging
@@ -67,6 +98,20 @@ export default async function handler(req, res) {
           break;
         case 'gemini_chat': 
           result = await callMCP(GEMINI_MCP, 'gemini_chat', { message: args.message }); 
+          break;
+        case 'claude_chat':
+          result = await callClaude(args.message, {
+            model: args.model,
+            system: args.system,
+            max_tokens: args.max_tokens
+          });
+          break;
+        case 'claude_analyze':
+          result = await callClaude(`${args.task}\n\nContent to analyze:\n${args.content}`, {
+            model: args.model || 'claude-sonnet-4-20250514',
+            system: 'You are Claude, an expert analyst. Provide detailed, accurate analysis.',
+            max_tokens: 8192
+          });
           break;
         case 'vertex_generate': 
           result = await callMCP(VERTEX_MCP, 'vertex_gemini_generate', { prompt: args.prompt }); 
