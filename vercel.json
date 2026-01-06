@@ -6,7 +6,7 @@
   "rewrites": [
     {"source": "/dashboard/executive/:user", "destination": "/dashboard/executive/:user.html"},
     {"source": "/api/executive/generate-report", "destination": "/api/executive/generate-report.js"},
-    {"source": "/api/executive/:user", "destination": "/api/executive/[user].js"}
+    {"source": "/api/executive/:user", "destination": "/api/executive/user.js"}
   ],
   "headers": [
     {
