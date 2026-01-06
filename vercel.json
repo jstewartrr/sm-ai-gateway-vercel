@@ -4,7 +4,6 @@
     "api/**/*.js": {"maxDuration": 120}
   },
   "rewrites": [
-    {"source": "/dashboard/executive/:user", "destination": "/dashboard/:user.html"},
     {"source": "/api/executive/generate-report", "destination": "/api/executive/generate-report.js"},
     {"source": "/api/executive/:user", "destination": "/api/executive/[user].js"}
   ],
