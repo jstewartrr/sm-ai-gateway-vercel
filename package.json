@@ -1,1 +1,1 @@
-{"name": "sm-ai-gateway-vercel", "version": "1.0.0", "dependencies": {"node-fetch": "^3.3.0"}}
+{"name": "sm-ai-gateway-vercel", "version": "1.0.1", "dependencies": {"node-fetch": "^3.3.0"}}
