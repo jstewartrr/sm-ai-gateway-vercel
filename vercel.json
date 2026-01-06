@@ -1,8 +1,21 @@
 {
+  "version": 2,
   "functions": {
-    "api/*.js": {"maxDuration": 60}
+    "api/**/*.js": {"maxDuration": 120}
   },
   "rewrites": [
-    {"source": "/dashboard/executive/:user", "destination": "/dashboard/:user.html"}
+    {"source": "/dashboard/executive/:user", "destination": "/dashboard/:user.html"},
+    {"source": "/api/executive/generate-report", "destination": "/api/executive/generate-report.js"},
+    {"source": "/api/executive/:user", "destination": "/api/executive/[user].js"}
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
+      ]
+    }
   ]
 }
